@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>べんきょうカレンダー</title>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700;900&family=DotGothic16&display=swap" rel="stylesheet">
+<style>
+/* ===== RESET ===== */
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Zen Maru Gothic',sans-serif;min-height:100vh;overflow-x:hidden;}
+
+/* ===== THEMES ===== */
+body.theme-ryota{
+  --bg1:#1A3A1A;--bg2:#0D2A0D;
+  --accent1:#7BC67E;--accent2:#F4D03F;--accent3:#E67E22;
+  --card:#1E3D1E;--card2:#244424;
+  --text:#E8F5E9;--text2:#A5D6A7;--subtext:#6D9B6D;
+  --border:#2E5E2E;--chip-bg:rgba(123,198,126,0.15);
+  --shadow:0 4px 20px rgba(0,0,0,0.5);
+  --btn-shadow:0 4px 15px rgba(123,198,126,0.4);
+  background: radial-gradient(ellipse at top, #1A4A1A, #0A1A0A);
+}
+body.theme-miyu{
+  --bg1:#FFF0F8;--bg2:#FFE4F2;
+  --accent1:#FF6EB4;--accent2:#FF9CD6;--accent3:#FFB6D9;
+  --card:#FFFFFF;--card2:#FFF5FB;
+  --text:#5D2A4A;--text2:#8B4468;--subtext:#C48CAA;
+  --border:#FFD6EC;--chip-bg:rgba(255,110,180,0.1);
+  --shadow:0 4px 20px rgba(255,110,180,0.2);
+  --btn-shadow:0 4px 15px rgba(255,110,180,0.4);
+  background: linear-gradient(135deg, #FFF0F8 0%, #FFE4F2 50%, #FFF0FA 100%);
+}
+
+/* ===== WELCOME SCREEN ===== */
+#welcome-screen{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-height:100vh;padding:30px;
+  background:linear-gradient(135deg,#1A3A1A 50%,#FFF0F8 50%);
+  position:relative;overflow:hidden;
+}
+.welcome-title{
+  font-size:2rem;font-weight:900;text-align:center;margin-bottom:40px;
+  color:#fff;text-shadow:0 2px 10px rgba(0,0,0,0.3);
+  position:relative;z-index:1;
+}
+.profile-cards{display:flex;gap:24px;flex-wrap:wrap;justify-content:center;position:relative;z-index:1;}
+.profile-card{
+  width:220px;padding:28px 24px;border-radius:28px;cursor:pointer;
+  transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  text-align:center;border:none;font-family:inherit;
+  position:relative;overflow:hidden;
+}
+.profile-card:hover{transform:translateY(-8px) scale(1.05);}
+.profile-card.ryota{
+  background:linear-gradient(160deg,#1A4A1A,#2E7D32);
+  box-shadow:0 8px 30px rgba(46,125,50,0.5);color:#E8F5E9;
+}
+.profile-card.miyu{
+  background:linear-gradient(160deg,#FF6EB4,#FF9CD6);
+  box-shadow:0 8px 30px rgba(255,110,180,0.5);color:#5D0030;
+}
+.profile-emoji{font-size:4rem;margin-bottom:12px;display:block;line-height:1;}
+.profile-name{font-size:1.6rem;font-weight:900;margin-bottom:4px;}
+.profile-grade{font-size:0.85rem;font-weight:700;opacity:0.8;}
+
+.adult-entry{
+  margin-top:30px;position:relative;z-index:1;
+  padding:12px 28px;border-radius:50px;border:none;
+  background:rgba(255,255,255,0.2);color:white;
+  font-family:inherit;font-size:0.9rem;font-weight:700;
+  cursor:pointer;backdrop-filter:blur(10px);
+  transition:all 0.2s;border:2px solid rgba(255,255,255,0.3);
+}
+.adult-entry:hover{background:rgba(255,255,255,0.35);}
+
+/* Dino deco */
+.dino-deco{position:absolute;font-size:8rem;opacity:0.08;pointer-events:none;}
+.kawaii-deco{position:absolute;font-size:5rem;opacity:0.12;pointer-events:none;animation:float 4s ease-in-out infinite;}
+@keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-12px);}}
+
+/* ===== APP SHELL ===== */
+#app-shell{display:none;}
+
+/* TOPBAR */
+.topbar{
+  display:flex;align-items:center;gap:12px;
+  padding:14px 20px;
+  background:var(--card);
+  box-shadow:var(--shadow);
+  border-bottom:2px solid var(--border);
+  position:sticky;top:0;z-index:100;
+}
+.back-btn{
+  padding:8px 16px;border-radius:20px;border:2px solid var(--border);
+  background:transparent;color:var(--text2);font-family:inherit;font-size:0.85rem;
+  font-weight:700;cursor:pointer;transition:all 0.2s;
+}
+.back-btn:hover{background:var(--border);}
+.topbar-title{font-size:1.4rem;font-weight:900;color:var(--text);flex:1;}
+.topbar-emoji{font-size:1.8rem;}
+.mode-toggle{display:flex;gap:8px;}
+.tab-btn{
+  padding:8px 18px;border-radius:20px;border:2px solid var(--border);
+  background:transparent;color:var(--text2);font-family:inherit;font-size:0.85rem;
+  font-weight:700;cursor:pointer;transition:all 0.2s;
+}
+.tab-btn.active{background:var(--accent1);color:#fff;border-color:var(--accent1);
+  box-shadow:var(--btn-shadow);}
+
+/* CHILD VIEW */
+.child-layout{display:grid;grid-template-columns:1fr 200px;gap:16px;padding:16px;max-width:1050px;margin:0 auto;}
+@media(max-width:680px){.child-layout{grid-template-columns:1fr;}}
+
+/* CALENDAR */
+.calendar-wrap{
+  background:var(--card);border-radius:24px;padding:20px;
+  box-shadow:var(--shadow);border:2px solid var(--border);
+}
+.cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.cal-nav-btn{
+  width:42px;height:42px;border-radius:12px;border:none;
+  background:var(--accent1);color:#fff;font-size:1.1rem;font-weight:900;
+  cursor:pointer;transition:all 0.2s;box-shadow:var(--btn-shadow);
+}
+.cal-nav-btn:hover{transform:scale(1.1);}
+.cal-title{font-size:1.3rem;font-weight:900;color:var(--accent1);}
+
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+.day-label{
+  text-align:center;font-weight:900;font-size:0.75rem;
+  padding:6px 2px;border-radius:8px;margin-bottom:2px;
+}
+
+/* Ryota day colors - 月曜始まり: 土=6列目(青), 日=7列目(赤) */
+body.theme-ryota .day-label:nth-child(7){color:#FF4B4B;background:rgba(255,75,75,0.15);}
+body.theme-ryota .day-label:nth-child(6){color:#4D96FF;background:rgba(77,150,255,0.15);}
+body.theme-ryota .day-label:not(:nth-child(7)):not(:nth-child(6)){color:var(--text2);background:var(--chip-bg);}
+
+/* Miyu day colors - 月曜始まり: 土=6列目(青), 日=7列目(赤) */
+body.theme-miyu .day-label:nth-child(7){color:#FF4B4B;background:rgba(255,75,75,0.1);}
+body.theme-miyu .day-label:nth-child(6){color:#4D96FF;background:rgba(77,150,255,0.1);}
+body.theme-miyu .day-label:not(:nth-child(7)):not(:nth-child(6)){color:var(--subtext);background:rgba(255,110,180,0.05);}
+
+.day-cell{
+  min-height:82px;border-radius:10px;padding:4px;
+  border:2px solid transparent;transition:all 0.2s;
+  background:var(--card2);position:relative;
+}
+.day-cell:hover{border-color:var(--accent1);background:var(--chip-bg);}
+.day-cell.drag-over{border-color:var(--accent1);background:var(--chip-bg);transform:scale(1.03);}
+.day-cell.today{border-color:var(--accent2);background:rgba(255,255,255,0.05);}
+.day-cell.empty{background:transparent;border-color:transparent;}
+
+/* Ryota sunday/saturday */
+body.theme-ryota .day-cell:nth-child(7n+2) .day-num{color:#FF8888;}
+body.theme-ryota .day-cell:nth-child(7n+1):not(.empty) .day-num{color:#7BC67E;}
+
+/* Miyu sunday/saturday */
+body.theme-miyu .day-cell:nth-child(7n+2) .day-num{color:#FF4488;}
+body.theme-miyu .day-cell:nth-child(7n+1):not(.empty) .day-num{color:#6688FF;}
+
+.day-num{font-size:0.78rem;font-weight:900;color:var(--text);margin-bottom:2px;}
+.today-num{
+  width:22px;height:22px;border-radius:50%;background:var(--accent1);
+  color:#fff;display:flex;align-items:center;justify-content:center;font-size:0.72rem;
+}
+
+.task-chip{
+  display:flex;align-items:center;gap:2px;border-radius:6px;
+  padding:2px 4px;margin:1px 0;font-size:0.62rem;font-weight:700;
+  transition:all 0.2s;position:relative;
+}
+.task-chip.done{opacity:0.45;text-decoration:line-through;}
+.task-chip input[type=checkbox]{width:12px;height:12px;cursor:pointer;flex-shrink:0;accent-color:var(--accent1);}
+.task-chip .chip-text{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.task-chip .del-chip{
+  opacity:0;background:none;border:none;cursor:pointer;
+  font-size:0.65rem;color:currentColor;padding:0;flex-shrink:0;
+}
+.task-chip:hover .del-chip{opacity:0.7;}
+
+/* TRAY */
+.tray-wrap{display:flex;flex-direction:column;gap:12px;}
+.tray-box{
+  background:var(--card);border-radius:20px;padding:14px;
+  box-shadow:var(--shadow);border:2px solid var(--border);
+}
+.tray-title{font-size:0.95rem;font-weight:900;color:var(--text);margin-bottom:8px;}
+.tray-hint{font-size:0.7rem;color:var(--subtext);font-weight:600;margin-top:6px;}
+.tray-item{
+  padding:7px 10px;border-radius:10px;font-size:0.8rem;font-weight:700;
+  cursor:grab;transition:all 0.2s;user-select:none;
+  display:flex;align-items:center;gap:6px;
+  margin-bottom:5px;box-shadow:0 2px 8px rgba(0,0,0,0.15);
+  color:#fff;
+}
+.tray-item:hover{transform:translateX(4px);filter:brightness(1.1);}
+.tray-item:active{cursor:grabbing;}
+.tray-item.dragging{opacity:0.4;}
+.tray-subj-header{
+  font-size:0.7rem;font-weight:900;color:var(--text2);
+  margin:6px 0 3px 2px;opacity:0.8;
+}
+
+/* ADULT PANEL */
+.adult-layout{padding:16px;max-width:780px;margin:0 auto;}
+.panel-card{
+  background:var(--card);border-radius:22px;padding:22px;
+  margin-bottom:14px;box-shadow:var(--shadow);border:2px solid var(--border);
+}
+.panel-h2{
+  font-size:1.15rem;font-weight:900;color:var(--accent1);
+  margin-bottom:14px;display:flex;align-items:center;gap:8px;
+}
+.form-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;align-items:flex-end;}
+.fg{display:flex;flex-direction:column;gap:3px;flex:1;min-width:130px;}
+.fg label{font-size:0.75rem;font-weight:700;color:var(--subtext);}
+.fg input,.fg select,.fg textarea{
+  padding:9px 13px;border:2px solid var(--border);border-radius:12px;
+  font-family:inherit;font-size:0.88rem;font-weight:600;
+  background:var(--card2);color:var(--text);transition:border-color 0.2s;
+}
+.fg input:focus,.fg select:focus,.fg textarea:focus{outline:none;border-color:var(--accent1);}
+
+.btn-add{
+  padding:9px 18px;border:none;border-radius:12px;
+  background:linear-gradient(135deg,var(--accent1),var(--accent2));
+  color:#fff;font-family:inherit;font-size:0.88rem;font-weight:700;
+  cursor:pointer;transition:all 0.2s;white-space:nowrap;
+  box-shadow:var(--btn-shadow);
+}
+.btn-add:hover{transform:translateY(-2px);}
+.btn-sm{
+  padding:5px 11px;border:none;border-radius:8px;
+  background:rgba(255,68,68,0.12);color:#FF4444;
+  font-family:inherit;font-size:0.75rem;font-weight:700;cursor:pointer;
+}
+.btn-sm:hover{background:rgba(255,68,68,0.22);}
+
+.list-row{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 13px;background:var(--card2);
+  border-radius:12px;border:2px solid var(--border);margin-bottom:6px;
+}
+.list-label{flex:1;font-weight:700;font-size:0.88rem;color:var(--text);}
+.cdot{width:16px;height:16px;border-radius:50%;flex-shrink:0;}
+
+.color-picker{display:flex;gap:6px;flex-wrap:wrap;}
+.c-opt{width:26px;height:26px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:all 0.2s;}
+.c-opt.sel{border-color:var(--text);transform:scale(1.2);}
+
+/* repeat */
+.rep-opts{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+.rep-btn{
+  padding:7px 15px;border:2px solid var(--border);border-radius:20px;
+  background:transparent;font-family:inherit;font-size:0.82rem;font-weight:700;
+  color:var(--text2);cursor:pointer;transition:all 0.2s;
+}
+.rep-btn.on{border-color:var(--accent1);background:var(--chip-bg);color:var(--accent1);}
+
+.wd-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
+.wd-b{
+  width:36px;height:36px;border-radius:50%;border:2px solid var(--border);
+  background:transparent;font-family:inherit;font-size:0.75rem;font-weight:700;
+  color:var(--text2);cursor:pointer;transition:all 0.2s;
+}
+.wd-b.on{border-color:var(--accent1);background:var(--accent1);color:#fff;}
+
+.date-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px;}
+.date-row input[type=date]{
+  padding:8px 12px;border:2px solid var(--border);border-radius:12px;
+  font-family:inherit;font-size:0.82rem;font-weight:600;
+  background:var(--card2);color:var(--text);
+}
+
+.btn-reg{
+  padding:12px 28px;border:none;border-radius:16px;
+  background:linear-gradient(135deg,var(--accent1),var(--accent3));
+  color:#fff;font-family:inherit;font-size:1rem;font-weight:900;
+  cursor:pointer;transition:all 0.2s;box-shadow:var(--btn-shadow);
+}
+.btn-reg:hover{transform:translateY(-2px);}
+
+/* Profile selector in adult panel */
+.profile-sel{
+  display:flex;gap:10px;margin-bottom:14px;
+}
+.psel-btn{
+  padding:8px 18px;border-radius:20px;border:2px solid var(--border);
+  background:transparent;font-family:inherit;font-size:0.9rem;font-weight:700;
+  color:var(--text2);cursor:pointer;transition:all 0.2s;
+}
+.psel-btn.active{background:var(--accent1);color:#fff;border-color:var(--accent1);}
+
+/* RYOTA DECO */
+body.theme-ryota .topbar{
+  background:linear-gradient(135deg,#1A3A1A,#1E4A1E);
+  border-bottom:2px solid #2E5E2E;
+}
+body.theme-ryota::before{
+  content:'🦕';position:fixed;right:-20px;bottom:40px;
+  font-size:8rem;opacity:0.05;pointer-events:none;z-index:0;
+  animation:dinoWalk 8s ease-in-out infinite;
+}
+@keyframes dinoWalk{0%,100%{transform:translateX(0) rotate(-2deg);}50%{transform:translateX(-20px) rotate(2deg);}}
+
+/* MIYU DECO */
+body.theme-miyu .topbar{background:#fff;border-bottom:2px solid #FFD6EC;}
+body.theme-miyu::before{
+  content:'🌸';position:fixed;right:20px;top:80px;
+  font-size:5rem;opacity:0.12;pointer-events:none;z-index:0;
+  animation:float 5s ease-in-out infinite;
+}
+body.theme-miyu::after{
+  content:'💖';position:fixed;left:10px;bottom:60px;
+  font-size:4rem;opacity:0.1;pointer-events:none;z-index:0;
+  animation:float 4s 1s ease-in-out infinite;
+}
+
+/* RYOTA calendar cell bg */
+body.theme-ryota .day-cell{background:#1C3C1C;}
+body.theme-ryota .day-cell.today{background:#1E4A1E;border-color:#7BC67E;}
+
+/* Toast */
+.toast{
+  position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(100px);
+  background:var(--accent1);color:#fff;padding:12px 28px;border-radius:50px;
+  font-weight:700;font-size:0.95rem;z-index:9999;transition:transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  white-space:nowrap;box-shadow:0 8px 25px rgba(0,0,0,0.3);pointer-events:none;
+}
+.toast.show{transform:translateX(-50%) translateY(0);}
+
+/* Miyu sparkles */
+body.theme-miyu .calendar-wrap{background:#FFF;}
+body.theme-miyu .day-cell{background:#FFF8FC;}
+body.theme-miyu .tray-box,.panel-card{border-radius:24px;}
+
+.notice{
+  padding:10px 14px;border-radius:12px;font-size:0.82rem;font-weight:600;
+  color:var(--accent1);background:var(--chip-bg);margin-bottom:12px;
+  border-left:3px solid var(--accent1);
+}
+</style>
+</head>
+<body>
+
+<!-- ===== WELCOME ===== -->
+<div id="welcome-screen">
+  <div class="dino-deco" style="left:-40px;top:10%;font-size:15rem;">🦕</div>
+  <div class="dino-deco" style="right:-30px;bottom:5%;font-size:12rem;transform:scaleX(-1);">🦖</div>
+  <div class="kawaii-deco" style="right:10%;top:20%;">🌸</div>
+  <div class="kawaii-deco" style="left:12%;bottom:20%;animation-delay:1s;">💝</div>
+  <div class="kawaii-deco" style="right:8%;bottom:30%;animation-delay:2s;">⭐</div>
+
+  <div class="welcome-title">🌟 べんきょうカレンダー 🌟<br><span style="font-size:1rem;font-weight:600;opacity:0.85;">だれがつかう？</span></div>
+
+  <div class="profile-cards">
+    <!-- Ryota -->
+    <button class="profile-card ryota" onclick="enterProfile('ryota')">
+      <span class="profile-emoji">🦕</span>
+      <div class="profile-name">りょうた</div>
+      <div class="profile-grade">しょうがく 3ねんせい</div>
+      <div style="margin-top:12px;font-size:1.5rem;">🦖 🌿 ⚡</div>
+    </button>
+
+    <!-- Miyu -->
+    <button class="profile-card miyu" onclick="enterProfile('miyu')">
+      <span class="profile-emoji">🌸</span>
+      <div class="profile-name">みゆ</div>
+      <div class="profile-grade">しょうがく 2ねんせい</div>
+      <div style="margin-top:12px;font-size:1.5rem;">💖 🎀 🌈</div>
+    </button>
+  </div>
+
+  <button class="adult-entry" onclick="enterAdult()">🔑 おとなせってい</button>
+</div>
+
+<!-- ===== APP SHELL ===== -->
+<div id="app-shell">
+  <div class="topbar">
+    <button class="back-btn" onclick="goHome()">← もどる</button>
+    <div class="topbar-emoji" id="topbar-emoji"></div>
+    <div class="topbar-title" id="topbar-title"></div>
+    <div class="mode-toggle" id="mode-toggle">
+      <button class="tab-btn active" id="tab-child" onclick="showTab('child')">📅 カレンダー</button>
+      <button class="tab-btn" id="tab-adult" onclick="showTab('adult')">⚙️ せってい</button>
+    </div>
+  </div>
+
+  <!-- CHILD VIEW -->
+  <div id="child-view">
+    <div class="child-layout">
+      <div class="calendar-wrap">
+        <div class="cal-nav">
+          <button class="cal-nav-btn" onclick="changeMonth(-1)">◀</button>
+          <div class="cal-title" id="cal-title"></div>
+          <button class="cal-nav-btn" onclick="changeMonth(1)">▶</button>
+        </div>
+        <div class="cal-grid" id="cal-grid"></div>
+      </div>
+      <div class="tray-wrap">
+        <div class="tray-box">
+          <div class="tray-title">🎒 こうもく</div>
+          <div id="tray-items"></div>
+          <div class="tray-hint">↑ ひにちにドラッグ！</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADULT VIEW -->
+  <div id="adult-view" style="display:none;">
+    <div class="adult-layout">
+
+      <!-- Profile selector (only in adult-from-home mode) -->
+      <div id="adult-profile-sel" class="panel-card" style="display:none;">
+        <div class="panel-h2">👤 せっていするこどもをえらぶ</div>
+        <div class="profile-sel">
+          <button class="psel-btn active" id="psel-ryota" onclick="setAdultProfile('ryota')">🦕 りょうた</button>
+          <button class="psel-btn" id="psel-miyu" onclick="setAdultProfile('miyu')">🌸 みゆ</button>
+        </div>
+      </div>
+
+      <!-- SUBJECT -->
+      <div class="panel-card">
+        <div class="panel-h2">📚 かもくのとうろく</div>
+        <div class="form-row">
+          <div class="fg">
+            <label>かもくめい</label>
+            <input type="text" id="subj-name" placeholder="れい：さんすう" />
+          </div>
+          <div class="fg" style="max-width:220px;">
+            <label>いろ</label>
+            <div class="color-picker" id="subj-color-picker"></div>
+          </div>
+          <button class="btn-add" onclick="addSubject()">➕ ついか</button>
+        </div>
+        <div id="subject-list"></div>
+      </div>
+
+      <!-- ITEMS -->
+      <div class="panel-card">
+        <div class="panel-h2">📝 こうもくのとうろく</div>
+        <div class="form-row">
+          <div class="fg">
+            <label>かもく</label>
+            <select id="item-subject"></select>
+          </div>
+          <div class="fg">
+            <label>こうもくめい</label>
+            <input type="text" id="item-name" placeholder="れい：かけざん" />
+          </div>
+          <button class="btn-add" onclick="addItem()">➕ ついか</button>
+        </div>
+        <div id="item-list"></div>
+      </div>
+
+      <!-- BULK REGISTER -->
+      <div class="panel-card">
+        <div class="panel-h2">🔄 くりかえしとうろく</div>
+        <div class="notice">📅 えらんだきかんにまとめてとうろくします</div>
+        <div class="form-row" style="margin-bottom:14px;">
+          <div class="fg">
+            <label>こうもく</label>
+            <select id="rep-item"></select>
+          </div>
+        </div>
+        <div style="font-weight:700;font-size:0.85rem;color:var(--subtext);margin-bottom:7px;">くりかえしのしゅるい</div>
+        <div class="rep-opts">
+          <button class="rep-btn on" id="ro-daily" onclick="setRepeat('daily')">まいにち</button>
+          <button class="rep-btn" id="ro-alt" onclick="setRepeat('alt')">いちにちおき</button>
+          <button class="rep-btn" id="ro-week" onclick="setRepeat('week')">ようびしてい</button>
+        </div>
+        <div id="wd-section" style="display:none;">
+          <div style="font-weight:700;font-size:0.82rem;color:var(--subtext);margin-bottom:6px;">ようびをえらぶ</div>
+          <div class="wd-row">
+            <button class="wd-b" data-wd="0">にち</button>
+            <button class="wd-b" data-wd="1">げつ</button>
+            <button class="wd-b" data-wd="2">か</button>
+            <button class="wd-b" data-wd="3">すい</button>
+            <button class="wd-b" data-wd="4">もく</button>
+            <button class="wd-b" data-wd="5">きん</button>
+            <button class="wd-b" data-wd="6">ど</button>
+          </div>
+        </div>
+        <div style="font-weight:700;font-size:0.85rem;color:var(--subtext);margin-bottom:7px;">きかん</div>
+        <div class="date-row">
+          <input type="date" id="rep-start"/>
+          <span style="font-weight:900;color:var(--text2);">〜</span>
+          <input type="date" id="rep-end"/>
+        </div>
+        <button class="btn-reg" onclick="bulkRegister()">🚀 まとめてとうろく</button>
+      </div>
+
+      <div class="panel-card" style="text-align:center;">
+        <div style="font-size:0.85rem;color:var(--subtext);margin-bottom:12px;font-weight:600;">このこどものデータをすべてけします</div>
+        <button class="btn-sm" style="padding:9px 20px;font-size:0.85rem;" onclick="clearProfile()">🗑️ データをけす</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== CONSTANTS =====
+const COLORS_RYOTA = ['#7BC67E','#F4D03F','#E67E22','#5DADE2','#AF7AC5','#EC7063','#1ABC9C','#F39C12'];
+const COLORS_MIYU  = ['#FF6EB4','#FF9CD6','#FFB347','#B39DDB','#80DEEA','#A5D6A7','#FF8A80','#FFCC02'];
+const MONTH_JP = ['1がつ','2がつ','3がつ','4がつ','5がつ','6がつ','7がつ','8がつ','9がつ','10がつ','11がつ','12がつ'];
+const DAY_JP   = ['げつ','か','すい','もく','きん','ど','にち'];
+
+// ===== STATE =====
+let currentProfile = 'ryota'; // 'ryota' | 'miyu' | null
+let currentAdultProfile = 'ryota'; // when entering from home adult button
+let fromHome = false; // entered adult mode from welcome screen
+let calYear = new Date().getFullYear();
+let calMonth = new Date().getMonth();
+let selectedColor = '';
+let repeatMode = 'daily';
+let selectedWD = new Set();
+let currentTab = 'child';
+
+function defaultData() { return { subjects:[], items:[], tasks:{} }; }
+
+function getData(profile) {
+  const raw = localStorage.getItem('benkyoCal_' + profile);
+  return raw ? JSON.parse(raw) : defaultData();
+}
+function saveData(profile, d) {
+  localStorage.setItem('benkyoCal_' + profile, JSON.stringify(d));
+}
+function D(profile) { return getData(profile); }
+function S(profile, d) { saveData(profile, d); }
+
+// shorthand for current profile
+function cd() { return getData(currentProfile); }
+function cs(d) { saveData(currentProfile, d); }
+
+// ===== TOAST =====
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ===== NAVIGATION =====
+function goHome() {
+  document.getElementById('welcome-screen').style.display = 'flex';
+  document.getElementById('app-shell').style.display = 'none';
+  document.body.className = '';
+  fromHome = false;
+}
+
+function enterProfile(profile) {
+  currentProfile = profile;
+  fromHome = false;
+  applyTheme(profile);
+  document.getElementById('welcome-screen').style.display = 'none';
+  document.getElementById('app-shell').style.display = 'block';
+  document.getElementById('mode-toggle').style.display = 'flex';
+  document.getElementById('adult-profile-sel').style.display = 'none';
+
+  const meta = profiles[profile];
+  document.getElementById('topbar-emoji').textContent = meta.emoji;
+  document.getElementById('topbar-title').textContent = meta.name + 'の べんきょうカレンダー';
+
+  showTab('child');
+  renderCalendar();
+  renderTray();
+}
+
+function enterAdult() {
+  fromHome = true;
+  currentAdultProfile = 'ryota';
+  applyTheme('ryota');
+  document.getElementById('welcome-screen').style.display = 'none';
+  document.getElementById('app-shell').style.display = 'block';
+  document.getElementById('mode-toggle').style.display = 'none';
+  document.getElementById('topbar-emoji').textContent = '🔑';
+  document.getElementById('topbar-title').textContent = 'おとなせってい';
+  document.getElementById('adult-profile-sel').style.display = 'block';
+
+  showTab('adult');
+  setAdultProfile('ryota');
+}
+
+function setAdultProfile(p) {
+  currentAdultProfile = p;
+  currentProfile = p;
+  applyTheme(p);
+  ['ryota','miyu'].forEach(x => {
+    document.getElementById('psel-'+x).classList.toggle('active', x===p);
+  });
+  selectedColor = colors()[0];
+  renderAdultContent();
+}
+
+const profiles = {
+  ryota:{ emoji:'🦕', name:'りょうた', grade:'3ねんせい' },
+  miyu:{ emoji:'🌸', name:'みゆ', grade:'2ねんせい' },
+};
+
+function applyTheme(profile) {
+  document.body.className = 'theme-' + profile;
+}
+
+function colors() {
+  return currentProfile === 'ryota' ? COLORS_RYOTA : COLORS_MIYU;
+}
+
+function showTab(tab) {
+  currentTab = tab;
+  document.getElementById('child-view').style.display = tab === 'child' ? '' : 'none';
+  document.getElementById('adult-view').style.display  = tab === 'adult' ? '' : 'none';
+  document.getElementById('tab-child').classList.toggle('active', tab === 'child');
+  document.getElementById('tab-adult').classList.toggle('active', tab === 'adult');
+  if (tab === 'adult') { renderAdultContent(); }
+}
+
+// ===== CALENDAR =====
+function changeMonth(dir) {
+  calMonth += dir;
+  if (calMonth < 0) { calMonth = 11; calYear--; }
+  if (calMonth > 11) { calMonth = 0; calYear++; }
+  renderCalendar();
+}
+
+function dateKey(y, m, d) {
+  return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+}
+
+function renderCalendar() {
+  document.getElementById('cal-title').textContent = `${calYear}ねん ${MONTH_JP[calMonth]}`;
+  const grid = document.getElementById('cal-grid');
+  grid.innerHTML = '';
+  const data = cd();
+
+  DAY_JP.forEach(d => {
+    const el = document.createElement('div');
+    el.className = 'day-label';
+    el.textContent = d;
+    grid.appendChild(el);
+  });
+
+  const rawDay = new Date(calYear, calMonth, 1).getDay();
+  const firstDay = (rawDay + 6) % 7; // 月曜始まり
+  const daysIn   = new Date(calYear, calMonth+1, 0).getDate();
+  const today    = new Date();
+
+  for (let i = 0; i < firstDay; i++) {
+    const el = document.createElement('div');
+    el.className = 'day-cell empty';
+    grid.appendChild(el);
+  }
+
+  for (let d = 1; d <= daysIn; d++) {
+    const key = dateKey(calYear, calMonth, d);
+    const isToday = today.getFullYear()===calYear && today.getMonth()===calMonth && today.getDate()===d;
+    const cell = document.createElement('div');
+    cell.className = 'day-cell' + (isToday ? ' today' : '');
+    cell.dataset.key = key;
+
+    const numDiv = document.createElement('div');
+    numDiv.className = 'day-num';
+    if (isToday) {
+      const inner = document.createElement('div');
+      inner.className = 'today-num';
+      inner.textContent = d;
+      numDiv.appendChild(inner);
+    } else {
+      numDiv.textContent = d;
+    }
+    cell.appendChild(numDiv);
+
+    // tasks
+    (data.tasks[key] || []).forEach(task => {
+      const item = data.items.find(i => i.id === task.itemId);
+      if (!item) return;
+      const subj = data.subjects.find(s => s.id === item.subjectId);
+      const color = subj ? subj.color : '#888';
+
+      const chip = document.createElement('div');
+      chip.className = 'task-chip' + (task.done ? ' done' : '');
+      chip.style.background = color + '28';
+      chip.style.color = color;
+      chip.style.borderLeft = '3px solid ' + color;
+
+      const cb = document.createElement('input');
+      cb.type = 'checkbox'; cb.checked = task.done;
+      cb.addEventListener('change', () => {
+        task.done = cb.checked;
+        chip.classList.toggle('done', task.done);
+        const d2 = cd();
+        const t = (d2.tasks[key] || []).find(t => t.id === task.id);
+        if (t) { t.done = cb.checked; cs(d2); }
+      });
+
+      const txt = document.createElement('span');
+      txt.className = 'chip-text'; txt.textContent = item.name;
+
+      const del = document.createElement('button');
+      del.className = 'del-chip'; del.textContent = '✕';
+      del.addEventListener('click', () => {
+        const d2 = cd();
+        d2.tasks[key] = (d2.tasks[key] || []).filter(t => t.id !== task.id);
+        cs(d2); renderCalendar();
+      });
+
+      chip.appendChild(cb); chip.appendChild(txt); chip.appendChild(del);
+      cell.appendChild(chip);
+    });
+
+    // drop
+    cell.addEventListener('dragover', e => { e.preventDefault(); cell.classList.add('drag-over'); });
+    cell.addEventListener('dragleave', () => cell.classList.remove('drag-over'));
+    cell.addEventListener('drop', e => {
+      e.preventDefault(); cell.classList.remove('drag-over');
+      const itemId = e.dataTransfer.getData('text/plain');
+      if (!itemId) return;
+      const d2 = cd();
+      if (!d2.tasks[key]) d2.tasks[key] = [];
+      d2.tasks[key].push({ id: Date.now() + Math.random(), itemId, done: false });
+      cs(d2); renderCalendar();
+    });
+
+    grid.appendChild(cell);
+  }
+}
+
+// ===== TRAY =====
+function renderTray() {
+  const tray = document.getElementById('tray-items');
+  tray.innerHTML = '';
+  const data = cd();
+  const emoji = currentProfile === 'ryota' ? '🦕' : '🌸';
+
+  if (data.subjects.length === 0) {
+    tray.innerHTML = `<div style="font-size:0.75rem;color:var(--subtext);font-weight:600;">${emoji} おとなせっていでこうもくをついかしてね！</div>`;
+    return;
+  }
+
+  data.subjects.forEach(subj => {
+    const items = data.items.filter(i => i.subjectId === subj.id);
+    if (!items.length) return;
+    const hdr = document.createElement('div');
+    hdr.className = 'tray-subj-header';
+    hdr.textContent = subj.name;
+    hdr.style.color = subj.color;
+    tray.appendChild(hdr);
+
+    items.forEach(item => {
+      const el = document.createElement('div');
+      el.className = 'tray-item';
+      el.style.background = `linear-gradient(135deg,${subj.color},${subj.color}BB)`;
+      el.draggable = true;
+      el.textContent = item.name;
+      el.addEventListener('dragstart', e => { e.dataTransfer.setData('text/plain', item.id); el.classList.add('dragging'); });
+      el.addEventListener('dragend', () => el.classList.remove('dragging'));
+      tray.appendChild(el);
+    });
+  });
+}
+
+// ===== ADULT CONTENT =====
+function renderAdultContent() {
+  selectedColor = selectedColor || colors()[0];
+  renderColorPicker();
+  renderSubjectList();
+  renderItemList();
+  renderRepItems();
+}
+
+function renderColorPicker() {
+  const cp = document.getElementById('subj-color-picker');
+  cp.innerHTML = '';
+  colors().forEach(c => {
+    const el = document.createElement('div');
+    el.className = 'c-opt' + (c === selectedColor ? ' sel' : '');
+    el.style.background = c;
+    el.addEventListener('click', () => { selectedColor = c; renderColorPicker(); });
+    cp.appendChild(el);
+  });
+}
+
+function renderSubjectList() {
+  const list = document.getElementById('subject-list');
+  list.innerHTML = '';
+  const data = cd();
+  data.subjects.forEach(s => {
+    const row = document.createElement('div');
+    row.className = 'list-row';
+    row.innerHTML = `<div class="cdot" style="background:${s.color}"></div>
+      <div class="list-label">${s.name}</div>
+      <button class="btn-sm" onclick="deleteSubject('${s.id}')">けす</button>`;
+    list.appendChild(row);
+  });
+  const sel = document.getElementById('item-subject');
+  sel.innerHTML = data.subjects.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+}
+
+function addSubject() {
+  const name = document.getElementById('subj-name').value.trim();
+  if (!name) return;
+  const d = cd();
+  d.subjects.push({ id: Date.now().toString(), name, color: selectedColor });
+  cs(d);
+  document.getElementById('subj-name').value = '';
+  renderSubjectList();
+  renderTray();
+  toast('✅ かもくをついかしました！');
+}
+
+function deleteSubject(id) {
+  if (!confirm('このかもくをけしますか？')) return;
+  const d = cd();
+  d.subjects = d.subjects.filter(s => s.id !== id);
+  d.items    = d.items.filter(i => i.subjectId !== id);
+  cs(d);
+  renderSubjectList();
+  renderItemList();
+  renderTray();
+}
+
+function renderItemList() {
+  const list = document.getElementById('item-list');
+  list.innerHTML = '';
+  const d = cd();
+  d.items.forEach(item => {
+    const subj = d.subjects.find(s => s.id === item.subjectId);
+    const color = subj ? subj.color : '#888';
+    const row = document.createElement('div');
+    row.className = 'list-row';
+    row.innerHTML = `<div class="cdot" style="background:${color}"></div>
+      <div class="list-label">${subj ? subj.name : '?'} ／ ${item.name}</div>
+      <button class="btn-sm" onclick="deleteItem('${item.id}')">けす</button>`;
+    list.appendChild(row);
+  });
+  renderRepItems();
+}
+
+function addItem() {
+  const subjId = document.getElementById('item-subject').value;
+  const name   = document.getElementById('item-name').value.trim();
+  if (!name || !subjId) return;
+  const d = cd();
+  d.items.push({ id: Date.now().toString(), subjectId: subjId, name });
+  cs(d);
+  document.getElementById('item-name').value = '';
+  renderItemList();
+  renderTray();
+  toast('✅ こうもくをついかしました！');
+}
+
+function deleteItem(id) {
+  const d = cd();
+  d.items = d.items.filter(i => i.id !== id);
+  cs(d);
+  renderItemList();
+  renderTray();
+}
+
+function renderRepItems() {
+  const sel = document.getElementById('rep-item');
+  const d = cd();
+  sel.innerHTML = d.items.map(i => {
+    const s = d.subjects.find(x => x.id === i.subjectId);
+    return `<option value="${i.id}">${s ? s.name + ' ／ ' : ''}${i.name}</option>`;
+  }).join('');
+}
+
+// repeat
+function setRepeat(mode) {
+  repeatMode = mode;
+  ['daily','alt','week'].forEach(m => document.getElementById('ro-'+m).classList.toggle('on', m===mode));
+  document.getElementById('wd-section').style.display = mode==='week' ? '' : 'none';
+}
+
+document.querySelectorAll('.wd-b').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const wd = parseInt(btn.dataset.wd);
+    if (selectedWD.has(wd)) selectedWD.delete(wd);
+    else selectedWD.add(wd);
+    btn.classList.toggle('on', selectedWD.has(wd));
+  });
+});
+
+function bulkRegister() {
+  const itemId   = document.getElementById('rep-item').value;
+  const startStr = document.getElementById('rep-start').value;
+  const endStr   = document.getElementById('rep-end').value;
+  if (!itemId || !startStr || !endStr) { alert('こうもく・きかんをえらんでください'); return; }
+  const start = new Date(startStr), end = new Date(endStr);
+  if (end < start) { alert('きかんがちがいます'); return; }
+
+  const d = cd();
+  let count = 0, altT = true;
+  let cur = new Date(start);
+  while (cur <= end) {
+    let add = false;
+    if (repeatMode === 'daily') add = true;
+    else if (repeatMode === 'alt') { add = altT; altT = !altT; }
+    else add = selectedWD.has(cur.getDay());
+
+    if (add) {
+      const key = `${cur.getFullYear()}-${String(cur.getMonth()+1).padStart(2,'0')}-${String(cur.getDate()).padStart(2,'0')}`;
+      if (!d.tasks[key]) d.tasks[key] = [];
+      if (!d.tasks[key].find(t => t.itemId === itemId)) {
+        d.tasks[key].push({ id: Date.now()+Math.random(), itemId, done: false });
+        count++;
+      }
+    }
+    cur.setDate(cur.getDate()+1);
+  }
+  cs(d);
+  renderCalendar();
+  toast(`🎉 ${count}かにとうろくしました！`);
+}
+
+function clearProfile() {
+  if (!confirm('このこどものデータをすべてけしますか？')) return;
+  saveData(currentProfile, defaultData());
+  renderSubjectList();
+  renderItemList();
+  renderTray();
+  renderCalendar();
+  toast('🗑️ データをけしました');
+}
+
+// ===== INIT =====
+const todayStr = new Date().toISOString().split('T')[0];
+document.getElementById('rep-start').value = todayStr;
+const e = new Date(); e.setMonth(e.getMonth()+1);
+document.getElementById('rep-end').value = e.toISOString().split('T')[0];
+
+// Start on welcome
+selectedColor = COLORS_RYOTA[0];
+</script>
+</body>
+</html>
