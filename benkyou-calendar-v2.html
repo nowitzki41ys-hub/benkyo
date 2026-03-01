@@ -152,13 +152,7 @@ body.theme-miyu .day-label:not(:nth-child(7)):not(:nth-child(6)){color:var(--sub
 .day-cell.today{border-color:var(--accent2);background:rgba(255,255,255,0.05);}
 .day-cell.empty{background:transparent;border-color:transparent;}
 
-/* Ryota sunday/saturday */
-body.theme-ryota .day-cell:nth-child(7n+2) .day-num{color:#FF8888;}
-body.theme-ryota .day-cell:nth-child(7n+1):not(.empty) .day-num{color:#7BC67E;}
-
-/* Miyu sunday/saturday */
-body.theme-miyu .day-cell:nth-child(7n+2) .day-num{color:#FF4488;}
-body.theme-miyu .day-cell:nth-child(7n+1):not(.empty) .day-num{color:#6688FF;}
+/* sunday/saturday - JSで制御 */
 
 .day-num{font-size:0.78rem;font-weight:900;color:var(--text);margin-bottom:2px;}
 .today-num{
@@ -505,6 +499,32 @@ body.theme-miyu .tray-box,.panel-card{border-radius:24px;}
 <div class="toast" id="toast"></div>
 
 <script>
+// ===== 日本の祝日 =====
+const HOLIDAYS = {
+  // 2025
+  '2025-01-01':'元日','2025-01-13':'成人の日','2025-02-11':'建国記念の日',
+  '2025-02-23':'天皇誕生日','2025-02-24':'振替休日','2025-03-20':'春分の日',
+  '2025-04-29':'昭和の日','2025-05-03':'憲法記念日','2025-05-04':'みどりの日',
+  '2025-05-05':'こどもの日','2025-05-06':'振替休日','2025-07-21':'海の日',
+  '2025-08-11':'山の日','2025-09-15':'敬老の日','2025-09-23':'秋分の日',
+  '2025-10-13':'スポーツの日','2025-11-03':'文化の日','2025-11-23':'勤労感謝の日',
+  '2025-11-24':'振替休日',
+  // 2026
+  '2026-01-01':'元日','2026-01-12':'成人の日','2026-02-11':'建国記念の日',
+  '2026-02-23':'天皇誕生日','2026-03-20':'春分の日','2026-04-29':'昭和の日',
+  '2026-05-03':'憲法記念日','2026-05-04':'みどりの日','2026-05-05':'こどもの日',
+  '2026-05-06':'振替休日','2026-07-20':'海の日','2026-08-11':'山の日',
+  '2026-09-21':'敬老の日','2026-09-22':'国民の休日','2026-09-23':'秋分の日',
+  '2026-10-12':'スポーツの日','2026-11-03':'文化の日','2026-11-23':'勤労感謝の日',
+  // 2027
+  '2027-01-01':'元日','2027-01-11':'成人の日','2027-02-11':'建国記念の日',
+  '2027-02-23':'天皇誕生日','2027-03-21':'春分の日','2027-04-29':'昭和の日',
+  '2027-05-03':'憲法記念日','2027-05-04':'みどりの日','2027-05-05':'こどもの日',
+  '2027-07-19':'海の日','2027-08-11':'山の日','2027-08-12':'振替休日',
+  '2027-09-20':'敬老の日','2027-09-23':'秋分の日','2027-10-11':'スポーツの日',
+  '2027-11-03':'文化の日','2027-11-23':'勤労感謝の日',
+};
+
 // ===== CONSTANTS =====
 const COLORS_RYOTA = ['#7BC67E','#F4D03F','#E67E22','#5DADE2','#AF7AC5','#EC7063','#1ABC9C','#F39C12'];
 const COLORS_MIYU  = ['#FF6EB4','#FF9CD6','#FFB347','#B39DDB','#80DEEA','#A5D6A7','#FF8A80','#FFCC02'];
@@ -663,6 +683,13 @@ function renderCalendar() {
     cell.className = 'day-cell' + (isToday ? ' today' : '');
     cell.dataset.key = key;
 
+    const isHoliday = !!HOLIDAYS[key];
+    const dayOfWeek = new Date(calYear, calMonth, d).getDay(); // 0=日, 6=土
+    const isSunday = dayOfWeek === 0;
+    const isSaturday = dayOfWeek === 6;
+    const isRed = isSunday || isHoliday;
+    const isBlue = isSaturday && !isHoliday;
+
     const numDiv = document.createElement('div');
     numDiv.className = 'day-num';
     if (isToday) {
@@ -672,8 +699,18 @@ function renderCalendar() {
       numDiv.appendChild(inner);
     } else {
       numDiv.textContent = d;
+      if (isRed) numDiv.style.color = '#FF4B4B';
+      else if (isBlue) numDiv.style.color = '#4D96FF';
     }
     cell.appendChild(numDiv);
+
+    // 祝日名を表示
+    if (isHoliday) {
+      const hLabel = document.createElement('div');
+      hLabel.style.cssText = 'font-size:0.55rem;color:#FF4B4B;font-weight:700;line-height:1.2;margin-bottom:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+      hLabel.textContent = '🎌' + HOLIDAYS[key];
+      cell.appendChild(hLabel);
+    }
 
     // tasks
     (data.tasks[key] || []).forEach(task => {
